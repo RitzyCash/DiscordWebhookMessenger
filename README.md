@@ -74,3 +74,6 @@ so you don't have to paste it again next time.
 - message templates so I don't retype the same announcement every time
 - scheduled sends
 - some kind of send history/log
+
+
+<img width="762" height="932" alt="image" src="https://github.com/user-attachments/assets/bfa3a491-cd58-4097-809f-fc6d9414ccfa" />
