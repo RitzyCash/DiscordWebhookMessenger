@@ -59,6 +59,31 @@ so you don't have to paste it again next time.
 - can save more than one webhook and blast the same message out to all of them at once
 - basic embed support - title, description, a color
 
+## Hotkeys
+
+Hit Ctrl+/ or the "?" button in the toolbar to see this list in the app itself.
+
+| Keys | Does |
+|---|---|
+| Ctrl+B | Bold |
+| Ctrl+I | Italic |
+| Ctrl+U | Underline |
+| Ctrl+Shift+X | Strikethrough |
+| Ctrl+E | Inline code |
+| Ctrl+Shift+C | Code block |
+| Ctrl+Shift+S | Spoiler |
+| Ctrl+Shift+Q | Quote selected lines |
+| Ctrl+K | Insert link |
+| Ctrl+Shift+M | Insert mention |
+| Ctrl+Shift+P | Emoji picker |
+| Ctrl+Shift+N | Clear message |
+| Ctrl+O | Add files |
+| Ctrl+Enter | Send |
+
+Formatting ones work the same as clicking the toolbar buttons - if you've got text
+selected they wrap it, if not they just drop the markers in at the cursor so you
+can type between them.
+
 ## Notes to self
 
 - webhook URLs are stored in `~/.discord_webhook_gui_config.json`, plaintext, so
