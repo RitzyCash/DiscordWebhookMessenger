@@ -40,6 +40,49 @@ EMOJIS = [
     "🤖", "👾", "💀", "🎮", "🎵", "📌", "📎", "🔔", "🔒", "🕐",
 ]
 
+SHORTCUTS = [
+    ("Ctrl+B", "Bold"),
+    ("Ctrl+I", "Italic"),
+    ("Ctrl+U", "Underline"),
+    ("Ctrl+Shift+X", "Strikethrough"),
+    ("Ctrl+E", "Inline code"),
+    ("Ctrl+Shift+C", "Code block"),
+    ("Ctrl+Shift+S", "Spoiler"),
+    ("Ctrl+Shift+Q", "Quote selected lines"),
+    ("Ctrl+K", "Insert link"),
+    ("Ctrl+Shift+M", "Insert mention"),
+    ("Ctrl+Shift+P", "Emoji picker"),
+    ("Ctrl+Shift+N", "Clear message"),
+    ("Ctrl+O", "Add files"),
+    ("Ctrl+Enter", "Send"),
+    ("Ctrl+/", "Show this list"),
+]
+
+
+class ToolTip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tip = None
+        widget.bind("<Enter>", self.show)
+        widget.bind("<Leave>", self.hide)
+
+    def show(self, event=None):
+        if self.tip or not self.text:
+            return
+        x = self.widget.winfo_rootx() + 6
+        y = self.widget.winfo_rooty() + self.widget.winfo_height() + 4
+        self.tip = tk.Toplevel(self.widget)
+        self.tip.wm_overrideredirect(True)
+        self.tip.wm_geometry(f"+{x}+{y}")
+        tk.Label(self.tip, text=self.text, bg="#111214", fg="#dbdee1", relief="solid",
+                 borderwidth=1, padx=6, pady=2, font=("Segoe UI", 8)).pack()
+
+    def hide(self, event=None):
+        if self.tip:
+            self.tip.destroy()
+            self.tip = None
+
 
 def load_config():
     if os.path.exists(CONFIG_PATH):
@@ -101,6 +144,7 @@ class DiscordWebhookGUI:
         self._build_style()
         self._build_widgets()
         self._load_profiles_into_ui()
+        self._bind_hotkeys()
 
     def _build_style(self):
         style = ttk.Style()
@@ -196,20 +240,25 @@ class DiscordWebhookGUI:
         toolbar = ttk.Frame(self.root)
         toolbar.pack(fill="x", padx=10, pady=(6, 0))
 
-        def tb(text, cmd, width=4):
-            ttk.Button(toolbar, text=text, width=width, command=cmd).pack(side="left", padx=2)
+        def tb(text, cmd, width=4, tip=None):
+            btn = ttk.Button(toolbar, text=text, width=width, command=cmd)
+            btn.pack(side="left", padx=2)
+            if tip:
+                ToolTip(btn, tip)
+            return btn
 
-        tb("B", lambda: self.wrap_selection("**"))
-        tb("I", lambda: self.wrap_selection("*"))
-        tb("U", lambda: self.wrap_selection("__"))
-        tb("S", lambda: self.wrap_selection("~~"))
-        tb("Code", lambda: self.wrap_selection("`"), width=5)
-        tb("Block", lambda: self.wrap_selection("```\n", "\n```"), width=5)
-        tb("Spoiler", lambda: self.wrap_selection("||"), width=7)
-        tb("Quote", self.insert_quote, width=6)
-        tb("Link", self.insert_link, width=5)
-        tb("\U0001F600", self.open_emoji_picker, width=3)
-        tb("@", self.open_mention_helper, width=3)
+        tb("B", lambda: self.wrap_selection("**"), tip="Bold (Ctrl+B)")
+        tb("I", lambda: self.wrap_selection("*"), tip="Italic (Ctrl+I)")
+        tb("U", lambda: self.wrap_selection("__"), tip="Underline (Ctrl+U)")
+        tb("S", lambda: self.wrap_selection("~~"), tip="Strikethrough (Ctrl+Shift+X)")
+        tb("Code", lambda: self.wrap_selection("`"), width=5, tip="Inline code (Ctrl+E)")
+        tb("Block", lambda: self.wrap_selection("```\n", "\n```"), width=5, tip="Code block (Ctrl+Shift+C)")
+        tb("Spoiler", lambda: self.wrap_selection("||"), width=7, tip="Spoiler (Ctrl+Shift+S)")
+        tb("Quote", self.insert_quote, width=6, tip="Quote (Ctrl+Shift+Q)")
+        tb("Link", self.insert_link, width=5, tip="Insert link (Ctrl+K)")
+        tb("\U0001F600", self.open_emoji_picker, width=3, tip="Emoji picker (Ctrl+Shift+P)")
+        tb("@", self.open_mention_helper, width=3, tip="Insert mention (Ctrl+Shift+M)")
+        tb("?", self.open_shortcuts_help, width=3, tip="Keyboard shortcuts (Ctrl+/)")
 
         msg_frame = ttk.LabelFrame(self.root, text="Message")
         msg_frame.pack(fill="both", expand=True, padx=10, pady=6)
@@ -272,7 +321,9 @@ class DiscordWebhookGUI:
 
         att_top = ttk.Frame(att_frame)
         att_top.pack(fill="x", padx=6, pady=4)
-        ttk.Button(att_top, text="Add Files...", command=self._add_files).pack(side="left")
+        add_files_btn = ttk.Button(att_top, text="Add Files...", command=self._add_files)
+        add_files_btn.pack(side="left")
+        ToolTip(add_files_btn, "Add files (Ctrl+O)")
         ttk.Button(att_top, text="Remove Selected", command=self._remove_selected_file).pack(side="left", padx=6)
         ttk.Button(att_top, text="Clear All", command=self._clear_files).pack(side="left")
 
@@ -300,9 +351,12 @@ class DiscordWebhookGUI:
         self.status_var = tk.StringVar(value="Ready.")
         ttk.Label(bottom, textvariable=self.status_var, foreground=self.colors["muted"]).pack(side="left")
 
-        ttk.Button(bottom, text="Clear Message", command=self._clear_message).pack(side="right", padx=(6, 0))
+        clear_btn = ttk.Button(bottom, text="Clear Message", command=self._clear_message)
+        clear_btn.pack(side="right", padx=(6, 0))
+        ToolTip(clear_btn, "Clear message (Ctrl+Shift+N)")
         self.send_btn = ttk.Button(bottom, text="Send", style="Accent.TButton", command=self._on_send_clicked)
         self.send_btn.pack(side="right")
+        ToolTip(self.send_btn, "Send (Ctrl+Enter)")
 
     def _load_profiles_into_ui(self):
         names = [p["name"] for p in self.cfg.get("profiles", [])]
@@ -512,6 +566,63 @@ class DiscordWebhookGUI:
         btn_row.pack(fill="x", pady=(10, 0))
         ttk.Button(btn_row, text="Insert", style="Accent.TButton", command=do_insert).pack(side="right")
         ttk.Button(btn_row, text="Cancel", command=win.destroy).pack(side="right", padx=6)
+
+    def open_shortcuts_help(self):
+        win = tk.Toplevel(self.root)
+        win.title("Keyboard shortcuts")
+        win.configure(bg=self.colors["bg"])
+        win.resizable(False, False)
+        win.transient(self.root)
+
+        frame = ttk.Frame(win)
+        frame.pack(padx=14, pady=14)
+
+        for i, (keys, desc) in enumerate(SHORTCUTS):
+            tk.Label(frame, text=keys, font=("Consolas", 10, "bold"), bg=self.colors["bg"],
+                     fg=self.colors["accent"], anchor="w", width=16).grid(row=i, column=0, sticky="w", pady=2)
+            tk.Label(frame, text=desc, bg=self.colors["bg"], fg=self.colors["fg"],
+                     anchor="w").grid(row=i, column=1, sticky="w", padx=(10, 0), pady=2)
+
+        ttk.Button(win, text="Close", command=win.destroy).pack(pady=(4, 10))
+
+    def _bind_hotkeys(self):
+        t = self.text
+
+        def wrap(prefix, suffix=None):
+            def handler(event):
+                self.wrap_selection(prefix, suffix)
+                return "break"
+            return handler
+
+        def call(fn):
+            def handler(event):
+                fn()
+                return "break"
+            return handler
+
+        def bind_both_cases(seq_upper, seq_lower, handler):
+            t.bind(seq_upper, handler)
+            t.bind(seq_lower, handler)
+
+        t.bind("<Control-b>", wrap("**"))
+        t.bind("<Control-i>", wrap("*"))
+        t.bind("<Control-u>", wrap("__"))
+        t.bind("<Control-e>", wrap("`"))
+        t.bind("<Control-k>", call(self.insert_link))
+
+        bind_both_cases("<Control-Shift-X>", "<Control-Shift-x>", wrap("~~"))
+        bind_both_cases("<Control-Shift-C>", "<Control-Shift-c>", wrap("```\n", "\n```"))
+        bind_both_cases("<Control-Shift-S>", "<Control-Shift-s>", wrap("||"))
+        bind_both_cases("<Control-Shift-Q>", "<Control-Shift-q>", call(self.insert_quote))
+        bind_both_cases("<Control-Shift-M>", "<Control-Shift-m>", call(self.open_mention_helper))
+        bind_both_cases("<Control-Shift-P>", "<Control-Shift-p>", call(self.open_emoji_picker))
+        bind_both_cases("<Control-Shift-N>", "<Control-Shift-n>", call(self._clear_message))
+
+        t.bind("<Control-Return>", call(self._on_send_clicked))
+
+        self.root.bind_all("<Control-Return>", call(self._on_send_clicked))
+        self.root.bind_all("<Control-o>", call(self._add_files))
+        self.root.bind_all("<Control-slash>", call(self.open_shortcuts_help))
 
     def _on_paste(self, event):
         if HAS_PIL:
